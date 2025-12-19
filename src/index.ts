@@ -7,6 +7,7 @@ import { LavalinkManager } from './manager/LavalinkManager';
 import { DatabaseManager } from './database/DatabaseManager';
 import { VoteManager } from './utils/VoteManager';
 import { CooldownManager } from './utils/CooldownManager';
+import { QueueManager } from './utils/QueueManager';
 
 // Create Discord client with required intents
 const client = new Client({
@@ -61,6 +62,10 @@ const voteManager = new VoteManager();
 // Initialize cooldown manager
 const cooldownManager = new CooldownManager();
 (client as any).cooldownManager = cooldownManager;
+
+// Initialize queue manager
+const queueManager = new QueueManager();
+(client as any).queueManager = queueManager;
 
 // Bot ready event
 client.once(Events.ClientReady, async (readyClient) => {
