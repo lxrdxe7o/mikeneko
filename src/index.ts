@@ -1,9 +1,13 @@
 import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
-import { readdirSync } from 'fs';
+import { readdirSync, mkdirSync, existsSync } from 'fs';
 import { join } from 'path';
 import { config } from './config/environment';
 import { Command, ExtendedClient } from './types/Command';
 import { LavalinkManager } from './manager/LavalinkManager';
+import { DatabaseManager } from './database/DatabaseManager';
+import { VoteManager } from './utils/VoteManager';
+import { CooldownManager } from './utils/CooldownManager';
+import { QueueManager } from './utils/QueueManager';
 
 // Create Discord client with required intents
 const client = new Client({
@@ -39,6 +43,29 @@ function loadCommands(dir: string): void {
     }
   }
 }
+
+// Ensure data directory exists
+const dataDir = join(__dirname, '../data');
+if (!existsSync(dataDir)) {
+  mkdirSync(dataDir, { recursive: true });
+}
+
+// Initialize database
+const dbPath = join(dataDir, 'bot.db');
+const database = new DatabaseManager(dbPath);
+(client as any).database = database;
+
+// Initialize vote manager
+const voteManager = new VoteManager();
+(client as any).voteManager = voteManager;
+
+// Initialize cooldown manager
+const cooldownManager = new CooldownManager();
+(client as any).cooldownManager = cooldownManager;
+
+// Initialize queue manager
+const queueManager = new QueueManager();
+(client as any).queueManager = queueManager;
 
 // Bot ready event
 client.once(Events.ClientReady, async (readyClient) => {
@@ -121,12 +148,14 @@ process.on('uncaughtException', (error: Error) => {
 // Graceful shutdown
 process.on('SIGINT', () => {
   console.log('\n🛑 Shutting down gracefully...');
+  database.close();
   client.destroy();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
   console.log('\n🛑 Shutting down gracefully...');
+  database.close();
   client.destroy();
   process.exit(0);
 });

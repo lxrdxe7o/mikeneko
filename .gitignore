@@ -9,6 +9,12 @@ dist/
 # Environment variables
 .env
 
+# Database
+data/
+*.db
+*.db-shm
+*.db-wal
+
 # Logs
 logs/
 *.log

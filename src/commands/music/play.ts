@@ -6,6 +6,10 @@ import {
 } from 'discord.js';
 import { Command, ExtendedClient } from '../../types/Command';
 import { LavalinkManager } from '../../manager/LavalinkManager';
+import { QueueManager } from '../../utils/QueueManager';
+import { DatabaseManager } from '../../database/DatabaseManager';
+import { VoteManager } from '../../utils/VoteManager';
+import { checkChannelPermission, checkUserRestriction } from '../../middleware/permissions';
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -19,6 +23,37 @@ const command: Command = {
     ) as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient): Promise<void> {
+    const db = (client as any).database as DatabaseManager;
+    const config = db.getServerConfig(interaction.guildId!);
+
+    // Check channel restrictions
+    const channelAllowed = await checkChannelPermission(interaction, config);
+    if (!channelAllowed) {
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('#ff0000')
+            .setDescription('❌ Music commands are not allowed in this channel!')
+        ],
+        ephemeral: true
+      });
+      return;
+    }
+
+    // Check user restrictions
+    const userAllowed = await checkUserRestriction(interaction, config);
+    if (!userAllowed) {
+      await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('#ff0000')
+            .setDescription('❌ You are restricted from using this bot!')
+        ],
+        ephemeral: true
+      });
+      return;
+    }
+
     // Defer the reply immediately
     await interaction.deferReply();
 
@@ -52,6 +87,8 @@ const command: Command = {
 
     const query = interaction.options.getString('query', true);
     const lavalinkManager = (client as any).lavalinkManager as LavalinkManager;
+    const queueManager = (client as any).queueManager as QueueManager;
+    const voteManager = (client as any).voteManager as VoteManager;
 
     try {
       // Search for the track
@@ -63,6 +100,34 @@ const command: Command = {
             new EmbedBuilder()
               .setColor('#ff0000')
               .setDescription('❌ No results found for your query!')
+          ]
+        });
+        return;
+      }
+
+      const track = searchResult.tracks[0];
+
+      // Check duration limit
+      if (!track.info.isStream && track.info.length > config.maxSongDuration * 1000) {
+        await interaction.editReply({
+          embeds: [
+            new EmbedBuilder()
+              .setColor('#ff0000')
+              .setDescription(
+                `❌ Song exceeds maximum duration limit of ${Math.floor(config.maxSongDuration / 60)} minutes!`
+              )
+          ]
+        });
+        return;
+      }
+
+      // Check queue size limit
+      if (queueManager.getSize(interaction.guildId!) >= config.maxQueueSize) {
+        await interaction.editReply({
+          embeds: [
+            new EmbedBuilder()
+              .setColor('#ff0000')
+              .setDescription(`❌ Queue is full! Maximum size: ${config.maxQueueSize} songs.`)
           ]
         });
         return;
@@ -86,12 +151,26 @@ const command: Command = {
           console.log(`🎵 Started playing in guild ${interaction.guildId}`);
         });
 
-        player.on('end', () => {
+        player.on('end', async () => {
           console.log(`⏹️ Playback ended in guild ${interaction.guildId}`);
+
+          // Clear votes for next track
+          voteManager.clearVotes(interaction.guildId!);
+
+          // Play next track from queue
+          const nextTrack = queueManager.getNext(interaction.guildId!);
+          if (nextTrack && player) {
+            queueManager.setNowPlaying(interaction.guildId!, nextTrack);
+            await player.playTrack({ track: nextTrack.track.encoded });
+          } else {
+            queueManager.setNowPlaying(interaction.guildId!, null);
+          }
         });
 
         player.on('closed', (reason) => {
           console.log(`🔒 Player closed in guild ${interaction.guildId}:`, reason);
+          queueManager.clear(interaction.guildId!);
+          voteManager.clearVotes(interaction.guildId!);
         });
 
         player.on('exception', (error) => {
@@ -99,10 +178,10 @@ const command: Command = {
         });
       }
 
-      const track = searchResult.tracks[0];
-
       // If nothing is playing, start playback
       if (!player.track) {
+        const queueTrack = { track, requestedBy: interaction.user.id, addedAt: new Date() };
+        queueManager.setNowPlaying(interaction.guildId!, queueTrack);
         await player.playTrack({ track: track.encoded });
 
         const embed = new EmbedBuilder()
@@ -117,7 +196,8 @@ const command: Command = {
                 ? '🔴 LIVE'
                 : formatDuration(track.info.length),
               inline: true
-            }
+            },
+            { name: '🎧 Requested by', value: `<@${interaction.user.id}>`, inline: true }
           );
 
         if (track.info.artworkUrl) {
@@ -126,7 +206,9 @@ const command: Command = {
 
         await interaction.editReply({ embeds: [embed] });
       } else {
-        // Add to queue (implement queue system as needed)
+        // Add to queue
+        const position = queueManager.addTrack(interaction.guildId!, track, interaction.user.id);
+
         const embed = new EmbedBuilder()
           .setColor('#ffa500')
           .setTitle('➕ Added to Queue')
@@ -139,7 +221,9 @@ const command: Command = {
                 ? '🔴 LIVE'
                 : formatDuration(track.info.length),
               inline: true
-            }
+            },
+            { name: '📍 Position', value: `${position} in queue`, inline: true },
+            { name: '🎧 Requested by', value: `<@${interaction.user.id}>`, inline: true }
           );
 
         if (track.info.artworkUrl) {
@@ -148,6 +232,9 @@ const command: Command = {
 
         await interaction.editReply({ embeds: [embed] });
       }
+
+      // Log command usage
+      db.logCommand(interaction.guildId!, interaction.user.id, 'play');
     } catch (error) {
       console.error('Error in play command:', error);
       await interaction.editReply({

@@ -1,4 +1,8 @@
-# Discord Lavalink Music Bot 🎵
+<div align="center">
+
+![Header](./assets/header.svg)
+
+</div>
 
 A production-ready, high-performance Discord music bot built with TypeScript, discord.js v14, and Lavalink v4.
 
@@ -357,4 +361,8 @@ For issues and questions:
 
 ---
 
-Built with ❤️ using TypeScript and discord.js v14
+<div align="center">
+
+![Footer](./assets/footer.svg)
+
+</div>
