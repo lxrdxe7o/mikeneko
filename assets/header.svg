@@ -1,79 +1,64 @@
-<svg width="100%" height="150" viewBox="0 0 2000 150" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+<svg width="100%" height="100%" viewBox="0 0 1200 300" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#5865F2;stop-opacity:1">
-        <animate attributeName="stop-color" values="#5865F2;#EB459E;#5865F2" dur="4s" repeatCount="indefinite"/>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f0c29;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#302b63;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#24243e;stop-opacity:1" />
+    </linearGradient>
+
+    <!-- Text Gradient -->
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#ff00cc;stop-opacity:1">
+        <animate attributeName="stop-color" values="#ff00cc;#333399;#ff00cc" dur="4s" repeatCount="indefinite" />
       </stop>
-      <stop offset="50%" style="stop-color:#EB459E;stop-opacity:1">
-        <animate attributeName="stop-color" values="#EB459E;#ED4245;#EB459E" dur="4s" repeatCount="indefinite"/>
-      </stop>
-      <stop offset="100%" style="stop-color:#ED4245;stop-opacity:1">
-        <animate attributeName="stop-color" values="#ED4245;#5865F2;#ED4245" dur="4s" repeatCount="indefinite"/>
+      <stop offset="100%" style="stop-color:#333399;stop-opacity:1">
+        <animate attributeName="stop-color" values="#333399;#ff00cc;#333399" dur="4s" repeatCount="indefinite" />
       </stop>
     </linearGradient>
 
-    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" style="stop-color:#FEE75C;stop-opacity:1"/>
-      <stop offset="50%" style="stop-color:#57F287;stop-opacity:1"/>
-      <stop offset="100%" style="stop-color:#FEE75C;stop-opacity:1"/>
-    </linearGradient>
+    <!-- Glow Filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="2.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
 
-  <!-- Background -->
-  <rect width="100%" height="150" fill="#23272A"/>
+  <!-- Background Rect -->
+  <rect width="100%" height="100%" fill="url(#bgGrad)" rx="15" ry="15"/>
 
-  <!-- Animated waves -->
-  <path d="M0,75 Q250,55 500,75 T1000,75 T1500,75 T2000,75 V150 H0 Z" fill="url(#grad1)" opacity="0.3">
-    <animate attributeName="d"
-      values="M0,75 Q250,55 500,75 T1000,75 T1500,75 T2000,75 V150 H0 Z;
-              M0,75 Q250,95 500,75 T1000,75 T1500,75 T2000,75 V150 H0 Z;
-              M0,75 Q250,55 500,75 T1000,75 T1500,75 T2000,75 V150 H0 Z"
-      dur="6s" repeatCount="indefinite"/>
-  </path>
+  <!-- Animated Particles -->
+  <circle cx="10%" cy="20%" r="2" fill="#fff" opacity="0.3">
+    <animate attributeName="cy" values="20%;10%;20%" dur="5s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.3;0.8;0.3" dur="5s" repeatCount="indefinite"/>
+  </circle>
+  <circle cx="90%" cy="80%" r="3" fill="#fff" opacity="0.2">
+    <animate attributeName="cy" values="80%;90%;80%" dur="7s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.2;0.6;0.2" dur="7s" repeatCount="indefinite"/>
+  </circle>
+    <circle cx="50%" cy="50%" r="1" fill="#fff" opacity="0.1">
+    <animate attributeName="r" values="1;100;1" dur="10s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="0.1;0.0;0.1" dur="10s" repeatCount="indefinite"/>
+  </circle>
 
-  <path d="M0,90 Q250,70 500,90 T1000,90 T1500,90 T2000,90 V150 H0 Z" fill="url(#grad1)" opacity="0.2">
-    <animate attributeName="d"
-      values="M0,90 Q250,70 500,90 T1000,90 T1500,90 T2000,90 V150 H0 Z;
-              M0,90 Q250,110 500,90 T1000,90 T1500,90 T2000,90 V150 H0 Z;
-              M0,90 Q250,70 500,90 T1000,90 T1500,90 T2000,90 V150 H0 Z"
-      dur="8s" repeatCount="indefinite"/>
-  </path>
-
-  <!-- Title -->
-  <text x="50%" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#FFFFFF" text-anchor="middle">
-    Discord Lavalink Music Bot
+  <!-- Main Title -->
+  <text x="50%" y="55%" text-anchor="middle" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="900" font-size="90" fill="url(#textGrad)" filter="url(#glow)">
+    MIKENEKO
+    <animate attributeName="letter-spacing" values="5;10;5" dur="3s" repeatCount="indefinite"/>
   </text>
 
   <!-- Subtitle -->
-  <text x="50%" y="80" font-family="Arial, sans-serif" font-size="18" fill="#B9BBBE" text-anchor="middle">
-    Production-Ready • TypeScript • Lavalink v4 • Slash Commands
+  <text x="50%" y="75%" text-anchor="middle" font-family="'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="300" font-size="28" fill="#a8a8b3" letter-spacing="3">
+    NEXT GEN MUSIC EXPERIENCE
   </text>
 
-  <!-- Musical notes -->
-  <g fill="url(#grad2)" opacity="0.8">
-    <text x="15%" y="45" font-size="30">♪
-      <animate attributeName="y" values="45;35;45" dur="2s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2s" repeatCount="indefinite"/>
-    </text>
-    <text x="85%" y="55" font-size="35">♫
-      <animate attributeName="y" values="55;45;55" dur="2.5s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2.5s" repeatCount="indefinite"/>
-    </text>
-    <text x="10%" y="100" font-size="25">♬
-      <animate attributeName="y" values="100;90;100" dur="3s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.8;0.4;0.8" dur="3s" repeatCount="indefinite"/>
-    </text>
-    <text x="90%" y="110" font-size="28">♩
-      <animate attributeName="y" values="110;100;110" dur="2.8s" repeatCount="indefinite"/>
-      <animate attributeName="opacity" values="0.8;0.4;0.8" dur="2.8s" repeatCount="indefinite"/>
-    </text>
-  </g>
+  <!-- Decorative Line -->
+  <line x1="30%" y1="85%" x2="70%" y2="85%" stroke="url(#textGrad)" stroke-width="2" opacity="0.5">
+     <animate attributeName="x1" values="30%;20%;30%" dur="4s" repeatCount="indefinite"/>
+     <animate attributeName="x2" values="70%;80%;70%" dur="4s" repeatCount="indefinite"/>
+  </line>
 
-  <!-- Discord logo icon -->
-  <g transform="translate(50, 30)">
-    <path d="M20,5 C20,5 15,3 10,3 C10,3 9,4 8,5 C6,5 4,6 3,8 C2,10 1,15 1,20 C1,20 3,23 8,23 C8,23 9,22 10,21 C12,21 14,22 16,22 C17,22 18,23 18,23 C23,23 25,20 25,20 C25,15 24,10 23,8 C22,6 20,5 18,5 C17,4 16,3 16,3 C11,3 6,5 6,5"
-          fill="#5865F2" stroke="#FFFFFF" stroke-width="0.5" opacity="0.6">
-      <animate attributeName="opacity" values="0.6;1;0.6" dur="3s" repeatCount="indefinite"/>
-    </path>
-  </g>
 </svg>
