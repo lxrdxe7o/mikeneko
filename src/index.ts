@@ -1,21 +1,21 @@
-import { Client, GatewayIntentBits, Collection, Events } from 'discord.js';
-import { readdirSync, mkdirSync, existsSync } from 'fs';
-import { join } from 'path';
-import { config } from './config/environment';
-import { Command, ExtendedClient } from './types/Command';
-import { LavalinkManager } from './manager/LavalinkManager';
-import { DatabaseManager } from './database/DatabaseManager';
-import { VoteManager } from './utils/VoteManager';
-import { CooldownManager } from './utils/CooldownManager';
-import { QueueManager } from './utils/QueueManager';
+import { Client, GatewayIntentBits, Collection, Events } from "discord.js";
+import { readdirSync, mkdirSync, existsSync } from "fs";
+import { join } from "path";
+import { config } from "./config/environment";
+import { Command, ExtendedClient } from "./types/Command";
+import { LavalinkManager } from "./manager/LavalinkManager";
+import { DatabaseManager } from "./database/DatabaseManager";
+import { VoteManager } from "./utils/VoteManager";
+import { CooldownManager } from "./utils/CooldownManager";
+import { QueueManager } from "./utils/QueueManager";
 
 // Create Discord client with required intents
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMessages
-  ]
+    GatewayIntentBits.GuildMessages,
+  ],
 }) as ExtendedClient;
 
 // Initialize command collection
@@ -30,7 +30,7 @@ function loadCommands(dir: string): void {
 
     if (file.isDirectory()) {
       loadCommands(filePath);
-    } else if (file.name.endsWith('.ts') || file.name.endsWith('.js')) {
+    } else if (file.name.endsWith(".js") || file.name.endsWith(".ts")) {
       const command: Command = require(filePath).default;
 
       if (!command || !command.data) {
@@ -45,13 +45,13 @@ function loadCommands(dir: string): void {
 }
 
 // Ensure data directory exists
-const dataDir = join(__dirname, '../data');
+const dataDir = join(__dirname, "../data");
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true });
 }
 
 // Initialize database
-const dbPath = join(dataDir, 'bot.db');
+const dbPath = join(dataDir, "bot.db");
 const database = new DatabaseManager(dbPath);
 (client as any).database = database;
 
@@ -69,28 +69,30 @@ const queueManager = new QueueManager();
 
 // Bot ready event
 client.once(Events.ClientReady, async (readyClient) => {
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
   console.log(`✅ Logged in as ${readyClient.user.tag}`);
   console.log(`🤖 Bot ID: ${readyClient.user.id}`);
   console.log(`🌐 Serving ${readyClient.guilds.cache.size} guild(s)`);
-  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+  console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   // Initialize Lavalink Manager
-  console.log('🔄 Initializing Lavalink connection...');
-  const lavalinkManager = new LavalinkManager(client);
-  (client as any).lavalinkManager = lavalinkManager;
-
   // Set bot activity
   readyClient.user.setPresence({
-    activities: [{ name: '🎵 Music with /play', type: 2 }],
-    status: 'online'
+    activities: [{ name: "🎵 Music with /play", type: 2 }],
+    status: "online",
   });
 
-  console.log('✅ Bot is ready!');
+  console.log("✅ Bot is ready!");
 });
+
+// Initialize Lavalink Manager
+console.log("🔄 Initializing Lavalink connection...");
+const lavalinkManager = new LavalinkManager(client);
+(client as any).lavalinkManager = lavalinkManager;
 
 // Handle slash command interactions
 client.on(Events.InteractionCreate, async (interaction) => {
+  console.log(`[DEBUG] Interaction received: ${interaction.id} type=${interaction.type}`);
   if (!interaction.isChatInputCommand()) return;
 
   const command = client.commands.get(interaction.commandName);
@@ -103,11 +105,14 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await command.execute(interaction, client);
   } catch (error) {
-    console.error(`❌ Error executing command ${interaction.commandName}:`, error);
+    console.error(
+      `❌ Error executing command ${interaction.commandName}:`,
+      error,
+    );
 
     const errorMessage = {
-      content: '❌ An error occurred while executing this command!',
-      ephemeral: true
+      content: "❌ An error occurred while executing this command!",
+      ephemeral: true,
     };
 
     if (interaction.replied || interaction.deferred) {
@@ -131,41 +136,44 @@ client.on(Events.InteractionCreate, async (interaction) => {
   try {
     await command.autocomplete(interaction);
   } catch (error) {
-    console.error(`❌ Error in autocomplete for ${interaction.commandName}:`, error);
+    console.error(
+      `❌ Error in autocomplete for ${interaction.commandName}:`,
+      error,
+    );
   }
 });
 
 // Error handling
-process.on('unhandledRejection', (error: Error) => {
-  console.error('❌ Unhandled promise rejection:', error);
+process.on("unhandledRejection", (error: Error) => {
+  console.error("❌ Unhandled promise rejection:", error);
 });
 
-process.on('uncaughtException', (error: Error) => {
-  console.error('❌ Uncaught exception:', error);
+process.on("uncaughtException", (error: Error) => {
+  console.error("❌ Uncaught exception:", error);
   process.exit(1);
 });
 
 // Graceful shutdown
-process.on('SIGINT', () => {
-  console.log('\n🛑 Shutting down gracefully...');
+process.on("SIGINT", () => {
+  console.log("\n🛑 Shutting down gracefully...");
   database.close();
   client.destroy();
   process.exit(0);
 });
 
-process.on('SIGTERM', () => {
-  console.log('\n🛑 Shutting down gracefully...');
+process.on("SIGTERM", () => {
+  console.log("\n🛑 Shutting down gracefully...");
   database.close();
   client.destroy();
   process.exit(0);
 });
 
 // Load commands
-console.log('🔄 Loading commands...');
-const commandsPath = join(__dirname, 'commands');
+console.log("🔄 Loading commands...");
+const commandsPath = join(__dirname, "commands");
 loadCommands(commandsPath);
 console.log(`✅ Loaded ${client.commands.size} command(s)\n`);
 
 // Login to Discord
-console.log('🔄 Connecting to Discord...');
+console.log("🔄 Connecting to Discord...");
 client.login(config.discord.token);

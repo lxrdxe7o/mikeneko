@@ -2,26 +2,28 @@ import {
   SlashCommandBuilder,
   ChatInputCommandInteraction,
   EmbedBuilder,
-  GuildMember
-} from 'discord.js';
-import { Command, ExtendedClient } from '../../types/Command';
-import { QueueManager } from '../../utils/QueueManager';
-import { DatabaseManager } from '../../database/DatabaseManager';
-import { checkDJPermission } from '../../middleware/permissions';
+} from "discord.js";
+import { Command, ExtendedClient } from "../../types/Command";
+import { QueueManager } from "../../utils/QueueManager";
+import { DatabaseManager } from "../../database/DatabaseManager";
+import { checkDJPermission } from "../../middleware/permissions";
 
 const command: Command = {
   data: new SlashCommandBuilder()
-    .setName('remove')
-    .setDescription('Remove a specific song from the queue (DJ only)')
-    .addIntegerOption(option =>
+    .setName("remove")
+    .setDescription("Remove a specific song from the queue (DJ only)")
+    .addIntegerOption((option) =>
       option
-        .setName('position')
-        .setDescription('Position in queue (1 = first song)')
+        .setName("position")
+        .setDescription("Position in queue (1 = first song)")
         .setRequired(true)
-        .setMinValue(1)
+        .setMinValue(1),
     ) as SlashCommandBuilder,
 
-  async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient): Promise<void> {
+  async execute(
+    interaction: ChatInputCommandInteraction,
+    client: ExtendedClient,
+  ): Promise<void> {
     const db = (client as any).database as DatabaseManager;
     const config = db.getServerConfig(interaction.guildId!);
 
@@ -32,16 +34,16 @@ const command: Command = {
       await interaction.reply({
         embeds: [
           new EmbedBuilder()
-            .setColor('#ff0000')
-            .setDescription('❌ You need DJ permissions to use this command!')
+            .setColor("#ff0000")
+            .setDescription("❌ You need DJ permissions to use this command!"),
         ],
-        ephemeral: true
+        ephemeral: true,
       });
       return;
     }
 
     const queueManager = (client as any).queueManager as QueueManager;
-    const position = interaction.options.getInteger('position', true) - 1; // Convert to 0-indexed
+    const position = interaction.options.getInteger("position", true) - 1; // Convert to 0-indexed
 
     const removed = queueManager.remove(interaction.guildId!, position);
 
@@ -49,10 +51,12 @@ const command: Command = {
       await interaction.reply({
         embeds: [
           new EmbedBuilder()
-            .setColor('#ff0000')
-            .setDescription('❌ Invalid position! Use `/queue` to see available positions.')
+            .setColor("#ff0000")
+            .setDescription(
+              "❌ Invalid position! Use `/queue` to see available positions.",
+            ),
         ],
-        ephemeral: true
+        ephemeral: true,
       });
       return;
     }
@@ -60,13 +64,13 @@ const command: Command = {
     await interaction.reply({
       embeds: [
         new EmbedBuilder()
-          .setColor('#00ff00')
+          .setColor("#00ff00")
           .setDescription(
-            `✅ Removed from queue:\n**[${removed.track.info.title}](${removed.track.info.uri})**`
-          )
-      ]
+            `✅ Removed from queue:\n**[${removed.track.info.title}](${removed.track.info.uri})**`,
+          ),
+      ],
     });
-  }
+  },
 };
 
 export default command;
