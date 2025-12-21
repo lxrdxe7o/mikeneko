@@ -208,6 +208,7 @@ const command: Command = {
       }
 
       // If nothing is playing, start playback
+      console.log(`[DEBUG] player.track state: ${player.track ? "Defined" : "Null/Undefined"}`);
       if (!player.track) {
         const queueTrack = {
           track,
