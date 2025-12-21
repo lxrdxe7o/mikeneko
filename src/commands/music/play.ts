@@ -207,9 +207,9 @@ const command: Command = {
         });
       }
 
-      // If nothing is playing, start playback
-      console.log(`[DEBUG] player.track state: ${player.track ? "Defined" : "Null/Undefined"}`);
-      if (!player.track) {
+      // If nothing is playing (according to our Queue Manager), start playback
+      console.log(`[DEBUG] Checking QueueManager for active track...`);
+      if (!queueManager.getNowPlaying(interaction.guildId!)) {
         const queueTrack = {
           track,
           requestedBy: interaction.user.id,

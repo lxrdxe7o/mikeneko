@@ -23,20 +23,49 @@ const command: Command = {
       return;
     }
 
-    const track = player.track;
+    const queueManager = (client as any).queueManager;
+    const currentTrack = queueManager.getNowPlaying(interaction.guildId!);
+
+    if (!currentTrack) {
+       await interaction.reply({
+        embeds: [
+          new EmbedBuilder()
+            .setColor('#ff0000')
+            .setDescription('❌ Nothing is currently playing!')
+        ],
+        ephemeral: true
+      });
+      return;
+    }
+
+    const trackInfo = currentTrack.track.info;
     const position = player.position;
 
     const embed = new EmbedBuilder()
       .setColor('#0099ff')
       .setTitle('🎵 Now Playing')
-      .setDescription(`[${track}](https://youtube.com)`) // Note: track object doesn't have full info in Shoukaku player
+      .setDescription(`[${trackInfo.title}](${trackInfo.uri})`)
       .addFields(
         {
+          name: '👤 Artist',
+          value: trackInfo.author || 'Unknown',
+          inline: true
+        },
+        {
           name: '⏱️ Progress',
-          value: `${formatDuration(position)} / ${player.paused ? '⏸️ Paused' : '▶️ Playing'}`,
+          value: `${formatDuration(position)} / ${trackInfo.isStream ? '🔴 LIVE' : formatDuration(trackInfo.length)}`,
+          inline: true
+        },
+        {
+          name: '🎧 Requested by',
+          value: `<@${currentTrack.requestedBy}>`,
           inline: true
         }
       );
+
+    if (trackInfo.artworkUrl) {
+      embed.setThumbnail(trackInfo.artworkUrl);
+    }
 
     await interaction.reply({ embeds: [embed] });
   }
