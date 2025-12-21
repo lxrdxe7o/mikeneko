@@ -22,14 +22,14 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "better-sqlite3": "^12.5.0",
     "discord.js": "^14.14.1",
-    "shoukaku": "^4.0.1",
     "dotenv": "^16.4.1",
-    "better-sqlite3": "^9.2.2"
+    "shoukaku": "^4.0.1"
   },
   "devDependencies": {
-    "@types/node": "^20.11.5",
     "@types/better-sqlite3": "^7.6.8",
+    "@types/node": "^20.11.5",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
   },
