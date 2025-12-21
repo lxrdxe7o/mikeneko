@@ -5,6 +5,9 @@
 LAVALINK_PORT=2333
 LAVALINK_JAR="Lavalink.jar"
 
+# Ensure we use the correct Node version (NVM)
+export PATH="/home/xero/.nvm/versions/node/v23.11.0/bin:$PATH"
+
 # Function to check if a port is in use
 is_port_in_use() {
     lsof -i :$1 > /dev/null

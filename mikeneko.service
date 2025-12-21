@@ -1,0 +1,13 @@
+[Unit]
+Description=Mikeneko Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/xero/Dev/mikeneko
+ExecStart=/home/xero/Dev/mikeneko/run.sh
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
