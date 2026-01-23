@@ -117,9 +117,7 @@ const command: Command = {
           if (nextTrack && player) {
             console.log(`[DEBUG] Playing next track: ${nextTrack.track.info.title}`);
             queueManager.setNowPlaying(interaction.guildId!, nextTrack);
-            await player.playTrack({
-              track: { encoded: nextTrack.track.encoded },
-            });
+            await player.playTrack({ track: nextTrack.track.encoded });
           } else {
             console.log(`[DEBUG] No more tracks in queue.`);
             queueManager.setNowPlaying(interaction.guildId!, null);
@@ -165,7 +163,7 @@ const command: Command = {
         };
         queueManager.setNowPlaying(interaction.guildId!, queueTrack);
         console.log(`[DEBUG] Playing track: ${track.info.title}`);
-        await player.playTrack({ track: { encoded: track.encoded } });
+        await player.playTrack({ track: track.encoded });
         console.log(`[DEBUG] playTrack called.`);
 
         const embed = new EmbedBuilder()
