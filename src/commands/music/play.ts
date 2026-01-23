@@ -7,12 +7,7 @@ import {
 import { Command, ExtendedClient } from "../../types/Command";
 import { LavalinkManager } from "../../manager/LavalinkManager";
 import { QueueManager } from "../../utils/QueueManager";
-import { DatabaseManager } from "../../database/DatabaseManager";
 import { VoteManager } from "../../utils/VoteManager";
-import {
-  checkChannelPermission,
-  checkUserRestriction,
-} from "../../middleware/permissions";
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -29,40 +24,7 @@ const command: Command = {
     interaction: ChatInputCommandInteraction,
     client: ExtendedClient,
   ): Promise<void> {
-    const db = (client as any).database as DatabaseManager;
-    const config = db.getServerConfig(interaction.guildId!);
-
-    // Check channel restrictions
-    const channelAllowed = await checkChannelPermission(interaction, config);
-    if (!channelAllowed) {
-      await interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor("#ff0000")
-            .setDescription(
-              "❌ Music commands are not allowed in this channel!",
-            ),
-        ],
-        ephemeral: true,
-      });
-      return;
-    }
-
-    // Check user restrictions
-    const userAllowed = await checkUserRestriction(interaction, config);
-    if (!userAllowed) {
-      await interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor("#ff0000")
-            .setDescription("❌ You are restricted from using this bot!"),
-        ],
-        ephemeral: true,
-      });
-      return;
-    }
-
-    // Defer the reply immediately
+    // Defer the reply IMMEDIATELY to prevent timeout
     console.log(`[DEBUG] Deferring reply for ${interaction.id}`);
     await interaction.deferReply();
     console.log(`[DEBUG] Deferred reply for ${interaction.id}`);
@@ -124,37 +86,6 @@ const command: Command = {
 
       const track = searchResult.tracks[0];
 
-      // Check duration limit
-      if (
-        !track.info.isStream &&
-        track.info.length > config.maxSongDuration * 1000
-      ) {
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("#ff0000")
-              .setDescription(
-                `❌ Song exceeds maximum duration limit of ${Math.floor(config.maxSongDuration / 60)} minutes!`,
-              ),
-          ],
-        });
-        return;
-      }
-
-      // Check queue size limit
-      if (queueManager.getSize(interaction.guildId!) >= config.maxQueueSize) {
-        await interaction.editReply({
-          embeds: [
-            new EmbedBuilder()
-              .setColor("#ff0000")
-              .setDescription(
-                `❌ Queue is full! Maximum size: ${config.maxQueueSize} songs.`,
-              ),
-          ],
-        });
-        return;
-      }
-
       // Get or create player
       let player = lavalinkManager.shoukaku.players.get(interaction.guildId!);
 
@@ -163,17 +94,20 @@ const command: Command = {
         player = await lavalinkManager.shoukaku.joinVoiceChannel({
           guildId: interaction.guildId!,
           channelId: voiceChannel.id,
-          shardId: 0,
+          shardId: interaction.guild?.shardId ?? 0,
           deaf: true,
         });
 
+        // Force set volume to 100 on start to ensure audio is audible
+        await player.setGlobalVolume(100);
+
         // Set up player event listeners
         player.on("start", () => {
-          console.log(`🎵 Started playing in guild ${interaction.guildId}`);
+          console.log(`🎵 [DEBUG] Track started playing in guild ${interaction.guildId}`);
         });
 
-        player.on("end", async () => {
-          console.log(`⏹️ Playback ended in guild ${interaction.guildId}`);
+        player.on("end", async (reason) => {
+          console.log(`⏹️ [DEBUG] Playback ended in guild ${interaction.guildId}. Reason: ${JSON.stringify(reason)}`);
 
           // Clear votes for next track
           voteManager.clearVotes(interaction.guildId!);
@@ -181,18 +115,20 @@ const command: Command = {
           // Play next track from queue
           const nextTrack = queueManager.getNext(interaction.guildId!);
           if (nextTrack && player) {
+            console.log(`[DEBUG] Playing next track: ${nextTrack.track.info.title}`);
             queueManager.setNowPlaying(interaction.guildId!, nextTrack);
             await player.playTrack({
               track: { encoded: nextTrack.track.encoded },
             });
           } else {
+            console.log(`[DEBUG] No more tracks in queue.`);
             queueManager.setNowPlaying(interaction.guildId!, null);
           }
         });
 
         player.on("closed", (reason) => {
           console.log(
-            `🔒 Player closed in guild ${interaction.guildId}:`,
+            `🔒 [DEBUG] Player closed in guild ${interaction.guildId}:`,
             reason,
           );
           queueManager.clear(interaction.guildId!);
@@ -201,9 +137,21 @@ const command: Command = {
 
         player.on("exception", (error) => {
           console.error(
-            `⚠️ Player exception in guild ${interaction.guildId}:`,
+            `⚠️ [DEBUG] Player exception in guild ${interaction.guildId}:`,
             error,
           );
+        });
+
+        player.on("stuck", (data) => {
+          console.warn(`⚠️ [DEBUG] Player stuck in guild ${interaction.guildId}:`, data);
+        });
+
+        player.on("update", () => {
+          // console.log(`[DEBUG] Player update in guild ${interaction.guildId}:`, data); // Too verbose to keep on always
+        });
+        
+        player.on("resumed", () => {
+             console.log(`[DEBUG] Player resumed in guild ${interaction.guildId}`);
         });
       }
 
@@ -216,7 +164,9 @@ const command: Command = {
           addedAt: new Date(),
         };
         queueManager.setNowPlaying(interaction.guildId!, queueTrack);
+        console.log(`[DEBUG] Playing track: ${track.info.title}`);
         await player.playTrack({ track: { encoded: track.encoded } });
+        console.log(`[DEBUG] playTrack called.`);
 
         const embed = new EmbedBuilder()
           .setColor("#00ff00")
@@ -290,9 +240,6 @@ const command: Command = {
 
         await interaction.editReply({ embeds: [embed] });
       }
-
-      // Log command usage
-      db.logCommand(interaction.guildId!, interaction.user.id, "play");
     } catch (error) {
       console.error("Error in play command:", error);
       await interaction.editReply({

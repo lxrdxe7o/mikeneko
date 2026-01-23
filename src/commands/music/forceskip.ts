@@ -7,34 +7,14 @@ import {
 import { Command, ExtendedClient } from '../../types/Command';
 import { LavalinkManager } from '../../manager/LavalinkManager';
 import { VoteManager } from '../../utils/VoteManager';
-import { DatabaseManager } from '../../database/DatabaseManager';
-import { checkDJPermission } from '../../middleware/permissions';
 
 const command: Command = {
   data: new SlashCommandBuilder()
     .setName('forceskip')
-    .setDescription('Skip the current track (DJ only)') as SlashCommandBuilder,
+    .setDescription('Skip the current track immediately') as SlashCommandBuilder,
 
   async execute(interaction: ChatInputCommandInteraction, client: ExtendedClient): Promise<void> {
     const member = interaction.member as GuildMember;
-    const db = (client as any).database as DatabaseManager;
-    const config = db.getServerConfig(interaction.guildId!);
-
-    // Check DJ permission
-    const hasPermission = await checkDJPermission(interaction, config);
-
-    if (!hasPermission) {
-      await interaction.reply({
-        embeds: [
-          new EmbedBuilder()
-            .setColor('#ff0000')
-            .setDescription('❌ You need DJ permissions to use this command!')
-        ],
-        ephemeral: true
-      });
-      return;
-    }
-
     const voiceChannel = member.voice.channel;
 
     if (!voiceChannel) {

@@ -40,10 +40,20 @@ async function deployCommands(): Promise<void> {
 
     const rest = new REST().setToken(config.discord.token);
 
-    const data = await rest.put(
-      Routes.applicationCommands(config.discord.clientId),
-      { body: commands }
-    ) as any[];
+    // Use guild-specific commands for instant updates during development
+    // Set GUILD_ID env var for faster testing, otherwise uses global commands (up to 1 hour delay)
+    const guildId = process.env.GUILD_ID;
+    
+    let route;
+    if (guildId) {
+      console.log(`🏠 Registering commands to guild: ${guildId} (instant)`);
+      route = Routes.applicationGuildCommands(config.discord.clientId, guildId);
+    } else {
+      console.log(`🌍 Registering global commands (may take up to 1 hour to propagate)`);
+      route = Routes.applicationCommands(config.discord.clientId);
+    }
+
+    const data = await rest.put(route, { body: commands }) as any[];
 
     console.log(`✅ Successfully registered ${data.length} application command(s)!`);
     console.log('\nRegistered commands:');

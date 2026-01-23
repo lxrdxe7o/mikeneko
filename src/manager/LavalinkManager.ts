@@ -22,14 +22,11 @@ export class LavalinkManager {
 
     this.shoukaku = new Shoukaku(new Connectors.DiscordJS(client), nodes, {
       reconnectInterval: 5000,
-      reconnectTries: 3,
+      reconnectTries: 100,
       restTimeout: 60000,
       moveOnDisconnect: false,
       userAgent: "DiscordMusicBot/1.0.0",
-      structures: {
-        rest: undefined,
-        player: undefined,
-      },
+
     });
 
     this.setupEventListeners();
@@ -86,9 +83,11 @@ export class LavalinkManager {
       searchQuery = `ytsearch:${query}`;
     }
 
+    console.log(`[DEBUG] Searching Lavalink with query: ${searchQuery}`);
     const result = await node.rest.resolve(searchQuery);
 
     if (!result) {
+      console.log(`[DEBUG] No result from Lavalink for query: ${searchQuery}`);
       return null;
     }
 
@@ -106,14 +105,19 @@ export class LavalinkManager {
         tracks = result.data.tracks;
         break;
       case LoadType.EMPTY:
+        console.log(`[DEBUG] Lavalink returned EMPTY loadType`);
+        return null;
       case LoadType.ERROR:
+        console.error(`[DEBUG] Lavalink returned ERROR loadType`, result.data);
         return null;
     }
 
     if (tracks.length === 0) {
+      console.log(`[DEBUG] No tracks found in result`);
       return null;
     }
 
+    console.log(`[DEBUG] Found ${tracks.length} tracks. First track: ${tracks[0].info.title}`);
     return { tracks, loadType: result.loadType };
   }
 }

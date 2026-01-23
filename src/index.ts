@@ -1,10 +1,9 @@
 import { Client, GatewayIntentBits, Collection, Events } from "discord.js";
-import { readdirSync, mkdirSync, existsSync } from "fs";
+import { readdirSync } from "fs";
 import { join } from "path";
 import { config } from "./config/environment";
 import { Command, ExtendedClient } from "./types/Command";
 import { LavalinkManager } from "./manager/LavalinkManager";
-import { DatabaseManager } from "./database/DatabaseManager";
 import { VoteManager } from "./utils/VoteManager";
 import { CooldownManager } from "./utils/CooldownManager";
 import { QueueManager } from "./utils/QueueManager";
@@ -30,7 +29,7 @@ function loadCommands(dir: string): void {
 
     if (file.isDirectory()) {
       loadCommands(filePath);
-    } else if (file.name.endsWith(".js") || file.name.endsWith(".ts")) {
+    } else if ((file.name.endsWith(".js") || file.name.endsWith(".ts")) && !file.name.endsWith(".d.ts")) {
       const command: Command = require(filePath).default;
 
       if (!command || !command.data) {
@@ -43,17 +42,6 @@ function loadCommands(dir: string): void {
     }
   }
 }
-
-// Ensure data directory exists
-const dataDir = join(__dirname, "../data");
-if (!existsSync(dataDir)) {
-  mkdirSync(dataDir, { recursive: true });
-}
-
-// Initialize database
-const dbPath = join(dataDir, "bot.db");
-const database = new DatabaseManager(dbPath);
-(client as any).database = database;
 
 // Initialize vote manager
 const voteManager = new VoteManager();
@@ -95,10 +83,12 @@ client.on(Events.InteractionCreate, async (interaction) => {
   console.log(`[DEBUG] Interaction received: ${interaction.id} type=${interaction.type}`);
   if (!interaction.isChatInputCommand()) return;
 
+  console.log(`[DEBUG] Handling command: ${interaction.commandName}`);
   const command = client.commands.get(interaction.commandName);
 
   if (!command) {
-    console.warn(`⚠️  Command not found: ${interaction.commandName}`);
+    console.warn(`⚠️  Command not found in collection: ${interaction.commandName}`);
+    console.log(`[DEBUG] Available commands: ${Array.from(client.commands.keys()).join(", ")}`);
     return;
   }
 
@@ -150,20 +140,23 @@ process.on("unhandledRejection", (error: Error) => {
 
 process.on("uncaughtException", (error: Error) => {
   console.error("❌ Uncaught exception:", error);
+  // Don't exit on Discord API errors - they are recoverable
+  if ((error as any).code && String((error as any).code).startsWith("10")) {
+    console.log("⚠️  Discord API error (interaction timeout) - continuing...");
+    return;
+  }
   process.exit(1);
 });
 
 // Graceful shutdown
 process.on("SIGINT", () => {
   console.log("\n🛑 Shutting down gracefully...");
-  database.close();
   client.destroy();
   process.exit(0);
 });
 
 process.on("SIGTERM", () => {
   console.log("\n🛑 Shutting down gracefully...");
-  database.close();
   client.destroy();
   process.exit(0);
 });

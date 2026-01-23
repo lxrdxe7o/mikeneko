@@ -7,7 +7,9 @@ import {
 import { Command, ExtendedClient } from '../../types/Command';
 import { LavalinkManager } from '../../manager/LavalinkManager';
 import { VoteManager } from '../../utils/VoteManager';
-import { DatabaseManager } from '../../database/DatabaseManager';
+
+// Default vote skip threshold (50%)
+const VOTE_SKIP_THRESHOLD = 50;
 
 const command: Command = {
   data: new SlashCommandBuilder()
@@ -32,7 +34,6 @@ const command: Command = {
 
     const lavalinkManager = (client as any).lavalinkManager as LavalinkManager;
     const voteManager = (client as any).voteManager as VoteManager;
-    const db = (client as any).database as DatabaseManager;
 
     const player = lavalinkManager.shoukaku.players.get(interaction.guildId!);
 
@@ -63,16 +64,13 @@ const command: Command = {
       return;
     }
 
-    // Get config for threshold
-    const config = db.getServerConfig(interaction.guildId!);
-
     // Count members in voice channel (excluding bots)
     const voiceMembers = voiceChannel.members.filter(m => !m.user.bot).size;
     const currentVotes = voteManager.getVoteCount(interaction.guildId!);
-    const requiredVotes = voteManager.getRequiredVotes(voiceMembers, config.voteSkipThreshold);
+    const requiredVotes = voteManager.getRequiredVotes(voiceMembers, VOTE_SKIP_THRESHOLD);
 
     // Check if threshold met
-    if (voteManager.checkThreshold(interaction.guildId!, voiceMembers, config.voteSkipThreshold)) {
+    if (voteManager.checkThreshold(interaction.guildId!, voiceMembers, VOTE_SKIP_THRESHOLD)) {
       // Skip the track
       await player.stopTrack();
       voteManager.clearVotes(interaction.guildId!);

@@ -12,6 +12,9 @@ RUN npm install
 # Copy source code
 COPY src ./src
 
+# Copy database files (including schema.sql)
+COPY src/database ./dist/database
+
 # Build TypeScript
 RUN npm run build
 
